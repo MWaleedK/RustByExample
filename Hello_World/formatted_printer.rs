@@ -56,4 +56,9 @@ fn main(){
     let number: f64 = 1.0;
     let width: usize = 5;
     println!("{number:>width$}");
+
+    //print Pi is roughly 3.142
+    let pi: f64 = 3.141592;
+    let precision: usize = 3; //decimal_place
+    println!("Pi is roughly {pi:.precision$}");
 }
