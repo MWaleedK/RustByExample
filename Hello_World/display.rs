@@ -42,6 +42,13 @@ impl fmt::Display for Point2D{
     }
 }
 
+impl fmt::Binary for MinMax{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+        write!(f, "{:b} + {:b}", self.0, self.1)
+    }
+}
+
+
 #[derive(Debug)]
 struct Complex{
     real: f64,
@@ -55,11 +62,13 @@ impl fmt::Display for Complex{
 }
 
 
+
 fn main(){
     let minmax = MinMax(0,15);
     println!("Compare Structures");
     println!("Display: {}", minmax);
     println!("Debug: {:?}", minmax);
+    println!("Binary {:b}", minmax);// Done
 
     let big_range =   MinMax(-300, 300);
     let small_range = MinMax(-3, 3);
@@ -72,7 +81,7 @@ fn main(){
     println!("Compare Points");
     println!("Debug {}", point);
     println!("Display {:?}", point);
-    //println!("Display {:b}"); To do
+
 
     let complex = Complex{real: 2.2, imaginary:5.4};
     println!("Compare complexs");
