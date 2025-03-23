@@ -5,6 +5,7 @@ pub struct VM {
     pc: usize,
     program: Vec<u8>,
     remainder: u32,
+    equal_flag: bool,
 }
 
 impl VM {
@@ -14,6 +15,7 @@ impl VM {
             program: vec![],
             pc: 0,
             remainder: 0,
+            equal_flag: false,
         }
     }
     pub fn run_once(&mut self) {
@@ -58,6 +60,88 @@ impl VM {
             Opcode::JMP => {
                 let target = self.registers[self.next_8_bits() as usize];
                 self.pc = target as usize;
+            }
+            Opcode::JMPF => {
+                let value = self.registers[self.next_8_bits() as usize];
+                self.pc += value as usize;
+            }
+            Opcode::JMPB => {
+                let value = self.registers[self.next_8_bits() as usize];
+                self.pc -= value as usize;
+            }
+            Opcode::EQ => {
+                let register_1 = self.registers[self.next_8_bits() as usize];
+                let register_2 = self.registers[self.next_8_bits() as usize];
+                if register_1 == register_2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+            }
+            Opcode::NEQ => {
+                let register_1 = self.registers[self.next_8_bits() as usize];
+                let register_2 = self.registers[self.next_8_bits() as usize];
+                if register_1 != register_2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+            }
+            Opcode::GTE => {
+                let register_1 = self.registers[self.next_8_bits() as usize];
+                let register_2 = self.registers[self.next_8_bits() as usize];
+                if register_1 >= register_2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+            }
+            Opcode::LTE => {
+                let register_1 = self.registers[self.next_8_bits() as usize];
+                let register_2 = self.registers[self.next_8_bits() as usize];
+                if register_1 <= register_2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+            }
+            Opcode::LT => {
+                let register_1 = self.registers[self.next_8_bits() as usize];
+                let register_2 = self.registers[self.next_8_bits() as usize];
+                if register_1 < register_2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+            }
+            Opcode::GT => {
+                let register_1 = self.registers[self.next_8_bits() as usize];
+                let register_2 = self.registers[self.next_8_bits() as usize];
+                if register_1 > register_2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+            }
+            Opcode::JEQ => {
+                let register = self.next_8_bits() as usize;
+                let target = self.registers[register];
+                if self.equal_flag {
+                    self.pc = target as usize;
+                }
+            }
+            Opcode::JNEQ => {
+                let register = self.next_8_bits() as usize;
+                let target = self.registers[register];
+                if !self.equal_flag {
+                    self.pc = target as usize;
+                }
             }
             Opcode::HLT => {
                 println!("HLT Encountered");
@@ -121,7 +205,7 @@ mod tests {
     #[test]
     fn test_opcode_hlt() {
         let mut test_vm = VM::new();
-        let test_bytes = vec![0, 0, 0, 0];
+        let test_bytes = vec![5, 0, 0, 0];
         test_vm.program = test_bytes;
         test_vm.run_once();
         let new_pc_after_one_correct_instruction: usize = 1;
@@ -141,7 +225,7 @@ mod tests {
     #[test]
     fn test_load_opcode() {
         let mut test_vm = VM::new();
-        test_vm.program = vec![1, 0, 1, 244];
+        test_vm.program = vec![0, 0, 1, 244];
         test_vm.run_once();
         assert_eq!(test_vm.registers[0], 500);
     }
@@ -149,9 +233,135 @@ mod tests {
     fn test_jmp_opcode() {
         let mut test_vm = VM::new();
         test_vm.registers[0] = 1;
-        test_vm.program = vec![7, 0, 0, 0];
+        test_vm.program = vec![6, 0, 0, 0];
         test_vm.run_once();
         assert_eq!(test_vm.pc, 1);
+    }
+
+    #[test]
+    fn test_jmpf_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 2;
+        test_vm.program = vec![7, 0, 0, 0, 6, 0, 0, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 4);
+    }
+    #[test]
+    fn test_jmpb_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 2;
+        test_vm.program = vec![0, 0, 10, 0, 8, 1, 0, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 4);
+    }
+
+    #[test]
+    fn test_eq_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 10;
+        test_vm.registers[1] = 10;
+        test_vm.program = vec![9, 0, 1, 0, 9, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[1] = 20;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+    }
+
+    #[test]
+    fn test_neq_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 10;
+        test_vm.registers[1] = 20;
+        test_vm.program = vec![10, 0, 1, 0, 10, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[1] = 10;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+    }
+
+    #[test]
+    fn test_gte_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 20;
+        test_vm.registers[1] = 10;
+        test_vm.program = vec![11, 0, 1, 0, 11, 0, 1, 0, 11, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[0] = 10;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[0] = 5;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+    }
+
+    #[test]
+    fn test_lte_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 20;
+        test_vm.registers[1] = 10;
+        test_vm.program = vec![12, 0, 1, 0, 12, 0, 1, 0, 12, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+        test_vm.registers[0] = 10;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[0] = 5;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+    }
+
+    #[test]
+    fn test_lt_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 20;
+        test_vm.registers[1] = 10;
+        test_vm.program = vec![13, 0, 1, 0, 13, 0, 1, 0, 13, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+        test_vm.registers[0] = 10;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+        test_vm.registers[0] = 5;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+    }
+
+    #[test]
+    fn test_gt_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 20;
+        test_vm.registers[1] = 10;
+        test_vm.program = vec![14, 0, 1, 0, 14, 0, 1, 0, 14, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[0] = 10;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+        test_vm.registers[0] = 5;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+    }
+    #[test]
+    fn test_jeq_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 7;
+        test_vm.equal_flag = true;
+        test_vm.program = vec![15, 0, 0, 0, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 7)
+    }
+
+    #[test]
+    fn test_jneq_opcode() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 7;
+        test_vm.equal_flag = false;
+        test_vm.program = vec![16, 0, 0, 0, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.pc, 7)
     }
 
     /*
