@@ -1,0 +1,15 @@
+[package]
+name = "snake"
+version = "0.1.0"
+edition = "2024"
+authors = ["VulcanBin <waleedjaved911@gmail.com>"]
+
+[dependencies]
+#random lib
+rand = "0.8.5"
+# UI
+piston_window = "0.132.0"
+
+
+#run cargo update in terminal to update the project dependencies
+#run cargo build to build project with latest dependencies
