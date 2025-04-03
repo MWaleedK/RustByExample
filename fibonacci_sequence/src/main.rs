@@ -5,6 +5,7 @@ fn main() {
     let mut current:u64 = 0;
     let mut next:u64 = 1;
     let mut _temp: u64 = 0;
+    //0,1,1,2,3,5,8...
 
     println!("Calculating the fibonacci sequence, enter the index you want the sequence to go till");
     let mut user_input:String = String::new();
