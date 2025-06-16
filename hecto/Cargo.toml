@@ -1,0 +1,11 @@
+[package]
+name = "hecto"
+version = "0.1.0"
+edition = "2024"
+authors = ["Muhammad Waleed Khan <waleedjaved911@gmail.com>"]
+
+
+[dependencies]
+crossterm = "0.29.0"
+
+
