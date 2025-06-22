@@ -3,11 +3,12 @@ use crossterm::event::{
     KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read,
 };
 mod terminal;
+
 use core::cmp::min;
 use std::io::Error;
 use terminal::{Position, Size, Terminal};
-const NAME: &str = env!("CARGO_PKG_NAME");
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+mod view;
+use view::View;
 #[derive(Default, Copy, Clone)]
 struct Location {
     x: usize,
@@ -105,10 +106,10 @@ impl Editor {
         Terminal::hide_caret()?;
         Terminal::move_caret_to(Position::default())?;
         if self.should_quit {
-            Terminal::clear_screen()?;
+            View::render();
             Terminal::print("Goodbye.\r\n")?;
         } else {
-            Self::draw_rows()?;
+            View::render()?;
             Terminal::move_caret_to(Position {
                 col: self.location.x as u16,
                 row: self.location.y as u16,
@@ -116,39 +117,6 @@ impl Editor {
         }
         Terminal::show_caret()?;
         Terminal::execute()?;
-        Ok(())
-    }
-
-    fn draw_welcome_message() -> Result<(), Error> {
-        let mut welcome_message = format!("{NAME} editor --version {VERSION}");
-        let width = Terminal::size()?.width as usize;
-        let len = welcome_message.len();
-        let padding = (width - len) / 2;
-        let spaces = " ".repeat(padding - 1);
-        welcome_message = format!("~{spaces}{welcome_message}");
-        welcome_message.truncate(width);
-        Terminal::print(welcome_message)?;
-        Ok(())
-    }
-
-    fn draw_empty() -> Result<(), Error> {
-        Terminal::print("~")?;
-        Ok(())
-    }
-
-    fn draw_rows() -> Result<(), Error> {
-        let Size { height, .. } = Terminal::size()?;
-        for current_row in 0..height {
-            Terminal::clear_line()?;
-            if current_row == height / 3 {
-                Self::draw_welcome_message()?;
-            } else {
-                Self::draw_empty()?;
-            }
-            if current_row + 1 < height {
-                Terminal::print("\r\n")?;
-            }
-        }
         Ok(())
     }
 }
