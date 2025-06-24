@@ -7,5 +7,6 @@ authors = ["Muhammad Waleed Khan <waleedjaved911@gmail.com>"]
 
 [dependencies]
 crossterm = "0.29.0"
-
-
+termion = "4.0.5"
+unicode-segmentation = "1.0.0"
+unicode-width = "0.2.1"
