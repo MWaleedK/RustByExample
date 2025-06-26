@@ -1,5 +1,4 @@
-mod stack;
-use stack::Stack;
+use super::stack::Stack;
 pub struct Paranthesis_Checker {}
 
 impl Paranthesis_Checker {

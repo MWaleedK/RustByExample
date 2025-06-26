@@ -1,8 +1,18 @@
 mod anagrams;
 use anagrams::Anagram;
-mod paranthesis_checker;
-use paranthesis_checker::Paranthesis_Checker;
+mod shared_stack;
+use shared_stack::baseconverter::BaseConverter;
+use shared_stack::infix_to_postfix::InfixToPostfix;
+
 fn main() {
-    let p = Paranthesis_Checker::check_para("{[]}");
-    println!("{}", p);
+    let infix = "( A + B) * (C + D)";
+    let mut i_to_p = InfixToPostfix::convert(infix);
+    match i_to_p {
+        Some(val) => {
+            println!("{infix}->{val}");
+        }
+        None => {
+            println!("{infix} is not acorrect infix string");
+        }
+    }
 }
