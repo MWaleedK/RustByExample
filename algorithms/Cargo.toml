@@ -2,5 +2,9 @@
 name = "algorithms"
 version = "0.1.0"
 edition = "2024"
+authors = ["Muhammad Waleed Khan <waleedjaved911@gmail.com>"]
 
 [dependencies]
+
+[profile.dev]
+debug = 2 # Full debug info (equivalent to `-C debuginfo=2`)
