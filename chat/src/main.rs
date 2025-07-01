@@ -1,33 +1,112 @@
-use mio::{Events, Interest, Poll, Token, net::TcpListener};
-use std::{net::SocketAddr, time::Duration};
+use mio::{
+    Events, Interest, Poll, Token,
+    net::{TcpListener, TcpStream},
+};
+use std::collections::HashMap;
+use std::net::SocketAddr;
 
-fn main() -> std::io::Result<()> {
-    // 1. Create a Poll instance (replaces `EventLoop`)
-    let mut poll = Poll::new()?;
+struct WebSocketServer {
+    socket: TcpListener,
+    clients: HashMap<Token, TcpStream>,
+    token_counter: usize,
+}
 
-    // 2. Create storage for events (replaces `Handler`)
-    let mut events = Events::with_capacity(128);
+impl WebSocketServer {
+    fn new(address: SocketAddr) -> std::io::Result<Self> {
+        let socket = TcpListener::bind(address)?;
+        Ok(Self {
+            socket,
+            clients: HashMap::new(),
+            token_counter: 1, // Start from 1 (0 is reserved for the server socket)
+        })
+    }
 
-    let address = "0.0.0.0:1000".parse::<SocketAddr>().unwrap();
-    let mut server_socket = TcpListener::bind(address).unwrap();
-    poll.registry()
-        .register(&mut server_socket, Token(0), Interest::READABLE)?;
-    // 3. Main event loop (replaces `event_loop.run()`)
-    loop {
-        // Wait for events (blocking)
-        poll.poll(&mut events, None)?;
+    fn run(&mut self) -> std::io::Result<()> {
+        let mut poll = Poll::new()?;
+        let mut events = Events::with_capacity(128);
 
-        // Process events
-        for event in events.iter() {
-            match event.token() {
-                Token(0) => match server_socket.accept() {
-                    Ok((connection, address)) => {
-                        println!("accepted conectio on {}", address)
+        // Register the server socket
+        poll.registry()
+            .register(&mut self.socket, Token(0), Interest::READABLE)?;
+
+        println!("Server listening...");
+
+        loop {
+            // Wait for events (blocking)
+            poll.poll(&mut events, None)?;
+
+            for event in events.iter() {
+                match event.token() {
+                    Token(0) => {
+                        // Accept new connections
+                        loop {
+                            match self.socket.accept() {
+                                Ok((mut connection, address)) => {
+                                    println!("Accepted connection from {}", address);
+
+                                    let token = Token(self.token_counter);
+                                    self.token_counter += 1;
+
+                                    // Register the new client socket
+                                    poll.registry().register(
+                                        &mut connection,
+                                        token,
+                                        Interest::READABLE,
+                                    )?;
+
+                                    // Store client
+                                    self.clients.insert(token, connection);
+                                }
+                                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                                    // No more connections to accept
+                                    break;
+                                }
+                                Err(e) => {
+                                    eprintln!("Accept error: {}", e);
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    Err(e) => println!("accept error:{} ", e),
-                },
-                _ => println!("Unknown event"),
+                    token => {
+                        // Handle client events (read readiness)
+                        if let Some(stream) = self.clients.get_mut(&token) {
+                            let mut buf = [0; 1024];
+                            match stream.read(&mut buf) {
+                                Ok(0) => {
+                                    // Connection closed
+                                    println!("Client {:?} disconnected", token);
+                                    self.clients.remove(&token);
+                                }
+                                Ok(n) => {
+                                    println!(
+                                        "Read {} bytes from client {:?}: {:?}",
+                                        n,
+                                        token,
+                                        &buf[..n]
+                                    );
+                                    // You could write a response here if needed
+                                }
+                                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                                    // No data to read
+                                }
+                                Err(e) => {
+                                    eprintln!("Read error: {}", e);
+                                    self.clients.remove(&token);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+use std::io::Read;
+
+fn main() -> std::io::Result<()> {
+    let address = "0.0.0.0:1000".parse::<SocketAddr>().unwrap();
+    let mut server = WebSocketServer::new(address)?;
+    server.run()
 }
