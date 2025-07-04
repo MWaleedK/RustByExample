@@ -9,5 +9,9 @@ pub struct Config {
 }
 
 fn main() {
+    let config = match Config::init_from_env() {
+        Ok(v) => v,
+        Err(e) => panic!("Could not read config from environment {}", e),
+    };
     println!("Hello, world!");
 }
